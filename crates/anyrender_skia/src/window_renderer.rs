@@ -49,20 +49,27 @@ impl WindowRenderer for SkiaWindowRenderer {
     where
         Self: 'a;
 
-    fn resume(&mut self, window: Arc<dyn anyrender::WindowHandle>, width: u32, height: u32) {
-        graphics::set_font_cache_count_limit(100);
-        graphics::set_typeface_cache_count_limit(100);
-        graphics::set_resource_cache_total_bytes_limit(10485760);
+    fn resume(
+        &mut self,
+        window: Arc<dyn anyrender::WindowHandle>,
+        width: u32,
+        height: u32,
+    ) -> impl std::future::Future<Output = ()> + '_ {
+        async move {
+            graphics::set_font_cache_count_limit(100);
+            graphics::set_typeface_cache_count_limit(100);
+            graphics::set_resource_cache_total_bytes_limit(10485760);
 
-        #[cfg(any(target_os = "macos", target_os = "ios"))]
-        let backend = crate::metal::MetalBackend::new(window, width, height);
-        #[cfg(not(any(target_os = "macos", target_os = "ios")))]
-        let backend = crate::opengl::OpenGLBackend::new(window, width, height);
+            #[cfg(any(target_os = "macos", target_os = "ios"))]
+            let backend = crate::metal::MetalBackend::new(window, width, height);
+            #[cfg(not(any(target_os = "macos", target_os = "ios")))]
+            let backend = crate::opengl::OpenGLBackend::new(window, width, height);
 
-        self.render_state = RenderState::Active(Box::new(ActiveRenderState {
-            backend: Box::new(backend),
-            scene_cache: SkiaSceneCache::default(),
-        }))
+            self.render_state = RenderState::Active(Box::new(ActiveRenderState {
+                backend: Box::new(backend),
+                scene_cache: SkiaSceneCache::default(),
+            }))
+        }
     }
 
     fn suspend(&mut self) {

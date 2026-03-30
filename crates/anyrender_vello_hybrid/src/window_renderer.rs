@@ -122,53 +122,66 @@ impl WindowRenderer for VelloHybridWindowRenderer {
         matches!(self.render_state, RenderState::Active(_))
     }
 
-    fn resume(&mut self, window_handle: Arc<dyn WindowHandle>, width: u32, height: u32) {
-        // Create wgpu_context::SurfaceRenderer
-        let render_surface = pollster::block_on(self.wgpu_context.create_surface(
-            window_handle.clone(),
-            SurfaceRendererConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                formats: vec![DEFAULT_TEXTURE_FORMAT],
-                width,
-                height,
-                present_mode: PresentMode::AutoVsync,
-                desired_maximum_frame_latency: 2,
-                alpha_mode: wgpu::CompositeAlphaMode::Auto,
-                view_formats: vec![],
-            },
-            None,
-            // Some(TextureConfiguration {
-            //     usage: TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING,
-            // }),
-        ))
-        .expect("Error creating surface");
+    fn resume(
+        &mut self,
+        window_handle: Arc<dyn WindowHandle>,
+        width: u32,
+        height: u32,
+    ) -> impl std::future::Future<Output = ()> + '_ {
+        async move {
+            // Create wgpu_context::SurfaceRenderer
+            let render_surface = self
+                .wgpu_context
+                .create_surface(
+                    window_handle.clone(),
+                    SurfaceRendererConfiguration {
+                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                        formats: vec![DEFAULT_TEXTURE_FORMAT],
+                        width,
+                        height,
+                        present_mode: PresentMode::AutoVsync,
+                        desired_maximum_frame_latency: 2,
+                        alpha_mode: wgpu::CompositeAlphaMode::Auto,
+                        view_formats: vec![],
+                    },
+                    None,
+                    // Some(TextureConfiguration {
+                    //     usage: TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING,
+                    // }),
+                )
+                .await
+                .expect("Error creating surface");
 
-        // Create vello::Renderer
-        let renderer = VelloHybridRenderer::new(
-            render_surface.device(),
-            &RenderTargetConfig {
-                format: DEFAULT_TEXTURE_FORMAT,
-                width,
-                height,
-            },
-        );
+            // Create vello::Renderer
+            let renderer = VelloHybridRenderer::new(
+                render_surface.device(),
+                &RenderTargetConfig {
+                    format: DEFAULT_TEXTURE_FORMAT,
+                    width,
+                    height,
+                },
+            );
 
-        // Resume custom paint sources
-        // let device_handle = &render_surface.device_handle;
-        // for source in self.custom_paint_sources.values_mut() {
-        //     source.resume(device_handle)
-        // }
+            // Resume custom paint sources
+            // let device_handle = &render_surface.device_handle;
+            // for source in self.custom_paint_sources.values_mut() {
+            //     source.resume(device_handle)
+            // }
 
-        // Create a Scene with the correct dimensions
-        self.scene =
-            VelloHybridScene::new_with(width as u16, height as u16, self.config.render_settings);
+            // Create a Scene with the correct dimensions
+            self.scene = VelloHybridScene::new_with(
+                width as u16,
+                height as u16,
+                self.config.render_settings,
+            );
 
-        // Set state to Active
-        self.window_handle = Some(window_handle);
-        self.render_state = RenderState::Active(ActiveRenderState {
-            renderer,
-            render_surface,
-        });
+            // Set state to Active
+            self.window_handle = Some(window_handle);
+            self.render_state = RenderState::Active(ActiveRenderState {
+                renderer,
+                render_surface,
+            });
+        }
     }
 
     fn suspend(&mut self) {

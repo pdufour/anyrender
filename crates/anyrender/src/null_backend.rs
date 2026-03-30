@@ -20,8 +20,15 @@ impl WindowRenderer for NullWindowRenderer {
     where
         Self: 'a;
 
-    fn resume(&mut self, _window: Arc<dyn WindowHandle>, _width: u32, _height: u32) {
-        self.is_active = true;
+    fn resume(
+        &mut self,
+        _window: Arc<dyn WindowHandle>,
+        _width: u32,
+        _height: u32,
+    ) -> impl std::future::Future<Output = ()> + '_ {
+        async move {
+            self.is_active = true;
+        }
     }
 
     fn suspend(&mut self) {
