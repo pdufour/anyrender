@@ -52,20 +52,27 @@ impl<Renderer: ImageRenderer> WindowRenderer for PixelsWindowRenderer<Renderer> 
         matches!(self.render_state, RenderState::Active(_))
     }
 
-    fn resume(&mut self, window_handle: Arc<dyn WindowHandle>, width: u32, height: u32) {
-        let surface = SurfaceTexture::new(width, height, window_handle.clone());
-        let mut pixels = Pixels::new(width, height, surface).unwrap();
-        pixels.enable_vsync(true);
-        pixels.clear_color(Color {
-            r: 1.0,
-            g: 1.0,
-            b: 1.0,
-            a: 1.0,
-        });
-        self.render_state = RenderState::Active(ActiveRenderState { pixels });
-        self.window_handle = Some(window_handle);
+    fn resume(
+        &mut self,
+        window_handle: Arc<dyn WindowHandle>,
+        width: u32,
+        height: u32,
+    ) -> impl std::future::Future<Output = ()> + '_ {
+        async move {
+            let surface = SurfaceTexture::new(width, height, window_handle.clone());
+            let mut pixels = Pixels::new(width, height, surface).unwrap();
+            pixels.enable_vsync(true);
+            pixels.clear_color(Color {
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: 1.0,
+            });
+            self.render_state = RenderState::Active(ActiveRenderState { pixels });
+            self.window_handle = Some(window_handle);
 
-        self.set_size(width, height);
+            self.set_size(width, height);
+        }
     }
 
     fn suspend(&mut self) {

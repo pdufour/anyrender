@@ -464,6 +464,7 @@ dependencies = [
  "kurbo",
  "peniko",
  "pixels_window_renderer",
+ "pollster 0.4.0",
  "winit",
 ]
 
@@ -4672,6 +4673,7 @@ dependencies = [
  "anyrender_vello_hybrid",
  "kurbo",
  "peniko",
+ "pollster 0.4.0",
  "winit",
 ]
 
